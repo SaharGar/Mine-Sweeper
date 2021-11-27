@@ -25,6 +25,7 @@ var gSafeClickCount = 3
 var gGame = {
     isOn: false,
     hintIsOn: false,
+    modalIsOn: false,
     shownCount: 0,
     markedCount: 0,
     secsPassed: document.querySelector('.timer').innerText
@@ -66,13 +67,14 @@ function renderBoard(mat, selector) {
         strHTML += '<tr>';
         for (var j = 0; j < mat[0].length; j++) {
             var cell = mat[i][j];
-            if (cell.isBomb) {
-                className = 'bomb cell' + '-' + i + '-' + j;
-                cell = BOMB
-            } else {
-                className = 'num cell' + '-' + i + '-' + j;
-                cell = NUM
-            }
+            // if (cell.isBomb) {
+            //     className = 'cell bomb cell' + '-' + i + '-' + j;
+            //     cell = BOMB
+            // } else {
+            //     className = 'cell num cell' + '-' + i + '-' + j;
+            //     cell = NUM
+            // }
+            className = 'cell cell' + '-' + i + '-' + j;
             strHTML += `<td  onclick="cellClicked(this,${i},${j})"  oncontextmenu="cellMarked(this,${i},${j})" class="${className}">${NUM}</td>`
         }
         strHTML += '</tr>'
@@ -83,24 +85,31 @@ function renderBoard(mat, selector) {
 }
 
 function cellClicked(elCell, i, j) {
-    if (!gGame.isOn) return
+    if (!gGame.isOn) {
+        alert('If you finished the previous game or picked another difficulty mid-game, please start a new game with the emoji button')
+        return
+    }
+    if(gGame.modalIsOn) return
+    
     if (elCell.innerText === FLAG) return
     if (gBoard[i][j].isShown) return
+    if (gBoard[i][j].isMarked) return
 
     if (gGame.shownCount === 0) {
         startTimer2()
         locatingMines(gLevel.mines, i, j)
     }
-    if(gGame.hintIsOn){
+    if (gGame.hintIsOn) {
         getHint(gBoard, i, j)
         return
     }
     if (gBoard[i][j].isBomb) {
         elCell.innerText = BOMB
+        elCell.classList.add('showed')
         gLives--
         showLivesIcons()
         if (gLives < 1) {
-            elCell.style.backgroundColor = 'red'
+            elCell.style.background = 'linear-gradient(to top, red, white)'
             gameOver(false)
         } else {
             updateMarked(i, j)
@@ -128,12 +137,13 @@ function cellMarked(elCell, i, j) {
     const context = document.getElementById('table')
     context.addEventListener("contextmenu", e => e.preventDefault());
     if (!gGame.isOn) return
+    if(gGame.modalIsOn) return
     if (gBoard[i][j].isShown) return
     if (elCell.innerText === BOMB) return
     if (elCell.innerText === FLAG) {
         gBoard[i][j].isMarked = false
         elCell.innerText = ''
-        gGame.markedCount-- 
+        gGame.markedCount--
     } else {
         elCell.innerText = FLAG
         gBoard[i][j].isMarked = true
@@ -192,25 +202,41 @@ function expandShown(board, rowIdx, colIdx) {
                 elCurrCell.innerText = ''
                 expandShown(board, i, j)
             }
-           
+
         }
     }
 }
 
 function gameOver(isVictory) {
-    var elGameOver = document.querySelector('.game-over')
+    var elModal = document.querySelector('.modal')
+    var elModalContent = document.querySelector('.modal-content')
     var elRestartBtn = document.querySelector('.new-game button')
+    var time = getTime()
     if (!isVictory) {
-        elGameOver.innerText = 'Damn! Watch out from the mines! Try again?'
+        elModalContent.innerText = `Damn! Watch out from the mines! 
+        
+        If you wish to try again please click on the crying emoji`
         elRestartBtn.innerText = '😭'
     } else {
-        elGameOver.innerText = 'Congratz! You have finished the game without exploding!'
+        elModalContent.innerText = `Congratz! 
+       
+        You have finished the game without exploding! 
+       
+       
+        Your time is: ${time} seconds `
         elRestartBtn.innerText = '🥳'
     }
     showBombs()
     gGame.isOn = false
-    elGameOver.style.opacity = 1
+    elModal.style.display = 'block'
+    gGame.modalIsOn = true
     stopClock()
+}
+
+function getTime(){
+    var elTimer = document.querySelector('.timer').innerText
+    var time = elTimer.slice(7)
+    return time
 }
 
 function checkWin() {
@@ -219,7 +245,15 @@ function checkWin() {
 
 }
 
+function closeModal(){
+    document.querySelector('.modal').style.display = 'none'
+    gGame.modalIsOn = false
+}
+
 function setDifficulty(elBtn) {
+    if(gGame.modalIsOn) return
+    gGame.isOn = false
+    stopClock()
     switch (elBtn.innerText) {
         case 'Easy(4*4)':
             gLevel.size = 4
@@ -242,6 +276,7 @@ function setDifficulty(elBtn) {
 }
 
 function restartGame(elBtn) {
+    if(gGame.modalIsOn) return
     stopClock()
     gGame.shownCount = 0
     gGame.markedCount = 0
@@ -249,8 +284,6 @@ function restartGame(elBtn) {
     elBtn.innerText = '😀'
     gHintsCount = 3
     gSafeClickCount = 3
-    var elGameOver = document.querySelector('.game-over')
-    elGameOver.style.opacity = 0
     document.querySelector('.timer').innerText = 'Timer: 0.0'
     document.querySelector('.hint').innerHTML = ''
 
@@ -290,7 +323,9 @@ function updateMarked(i, j) {
 }
 
 function setHintOn() {
-    gGame.hintIsOn = true 
+    if(!gGame.isOn) return
+    if(gGame.modalIsOn) return
+    gGame.hintIsOn = true
 }
 
 function getHint(board, rowIdx, colIdx) {
@@ -304,11 +339,14 @@ function getHint(board, rowIdx, colIdx) {
             if (cell.isShown) continue
             var elCurrCell = document.querySelector(`.cell-${i}-${j}`)
             elCurrCell.classList.add('showed')
-            if(cell.isBomb) elCurrCell.innerText = BOMB
+            if (cell.isBomb){
+                elCurrCell.innerText = BOMB
+                continue
+            } 
             if (cell.minesAroundCount > 0) elCurrCell.innerText = cell.minesAroundCount
         }
     }
-    gHintsCount --
+    gHintsCount--
     showHintsCount()
     setTimeout(hideHint, 500, board, rowIdx, colIdx)
     gGame.hintIsOn = false
@@ -337,23 +375,25 @@ function showHintsCount() {
     }
 }
 
-function showSafeClick(){
-    if(!gSafeClickCount) return
+function showSafeClick() {
+    if(gGame.modalIsOn) return
+    if (!gSafeClickCount) return
+    if(!gGame.isOn) return
     var pos = checkForEmptyCell2()
     var elCell = document.querySelector(`.cell-${pos.i}-${pos.j}`)
-    elCell.classList.add('showed')  
-    gSafeClickCount --
+    elCell.classList.add('showed')
+    gSafeClickCount--
     safeClickCount()
-    setTimeout(hideSafeClick,100,pos.i,pos.j)
+    setTimeout(hideSafeClick, 100, pos.i, pos.j)
 }
 
-function safeClickCount(){
+function safeClickCount() {
     var elSpan = document.querySelector('.safe-click-Btn span')
     elSpan.innerText = gSafeClickCount
 }
 
 
-function hideSafeClick(i,j){
+function hideSafeClick(i, j) {
     var elCell = document.querySelector(`.cell-${i}-${j}`)
     elCell.classList.remove('showed')
 }

@@ -8,14 +8,14 @@
     <title>Document</title>
 </head>
 <body onload="initGame()">
-    <h1>Mine Sweeper</h1>
     <div class="main">
+        <h1>Mine Sweeper</h1>
         <h2>Can you finish the game without losing a leg?</h2>
         <div class="ui">
-            <div class="new-game"><button onclick="restartGame(this)">😀</button></div>
             <button class="difficulty" onclick="setDifficulty(this)">Easy(4*4)</button>
             <button class="difficulty" onclick="setDifficulty(this)">Medium(8*8)</button>
             <button class="difficulty" onclick="setDifficulty(this)">Hard(12*12)</button>
+            <div class="new-game"><button onclick="restartGame(this)">😀</button></div>
             <div class="safe-click"><button class="safe-click-Btn" onclick="showSafeClick()">Safe Click: <span></span></button></div>
             <div class="timer">Timer: 0.0</div>
             <div class="lives-icons"></div>
@@ -25,7 +25,10 @@
 
         </div>
         <div class="lives"></div>
-        <div class="game-over"></div>
+        <div class="modal">
+            <button class="close-modal-Btn" onclick="closeModal()">x</button>
+            <div class="modal-content">i am a modal</div>
+        </div>
         <div class="board">
 
         </div>

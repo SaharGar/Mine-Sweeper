@@ -98,5 +98,4 @@ function showTimer(startTime) {
 }
 function stopClock() {
     clearInterval(gTimerInt);
-    // document.querySelector('.timer').innerText = 'Timer: 0.0'
 }
